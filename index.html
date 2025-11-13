@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chọn Kính Đúng Cho Em - Anh Yêu Em!</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #ff9a9e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+            text-align: center;
+        }
+        h1 {
+            color: #ff6b6b;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        #face-container {
+            position: relative;
+            margin: 20px;
+            border: 5px solid #ffeaa7;
+            border-radius: 20px;
+            overflow: hidden;
+            width: 300px;
+            height: 300px;
+            background: white;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        #base-face {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        #base-face.fade-out { opacity: 0; transform: scale(0.98); }
+        #base-face.fade-in { opacity: 1; transform: scale(1); }
+        #glasses-overlay {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: auto;
+            opacity: 0;
+            transition: opacity 0.5s, transform 0.3s;
+            z-index: 10;
+        }
+        #glasses-overlay.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+            animation: sparkle 1s ease-in-out;
+        }
+        @keyframes sparkle {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.5) drop-shadow(0 0 10px #ff6b6b); }
+        }
+        .glasses-btn {
+            background: #ff9a9e;
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            margin: 8px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .glasses-btn:hover {
+            background: #ff6b6b;
+            transform: translateY(-2px);
+        }
+        .glasses-btn.tried {
+            background: #ddd;
+            cursor: not-allowed;
+        }
+        #confirm-btn {
+            background: #ffeaa7;
+            color: #ff6b6b;
+            border: none;
+            padding: 15px 25px;
+            margin: 15px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            display: none;
+            transition: background 0.3s;
+        }
+        #confirm-btn:hover {
+            background: #ffd93d;
+        }
+        #message {
+            font-size: 20px;
+            color: #e17055;
+            margin: 20px;
+            min-height: 30px;
+        }
+        #progress {
+            font-size: 14px;
+            color: #666;
+        }
+        button.reset {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button.remove {
+            background: #ffffff;
+            color: #333;
+            border: 2px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            margin-right: 10px;
+        }
+        button.remove:hover {
+            background: #f7f7f7;
+            border-color: #ccc;
+        }
+        .confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #ff6b6b;
+            opacity: 0.8;
+            animation: confetti-fall 3s linear infinite;
+        }
+        #thumbnails {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 14px;
+        }
+        .thumb {
+            width: 120px;
+            height: 80px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid transparent;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            background: #fff;
+        }
+        .thumb:hover { transform: translateY(-2px); }
+        .thumb.active { border-color: #ff6b6b; box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        .thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #fff;
+        }
+        /* Keyframes cho hiệu ứng confetti */
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        /* Ẩn các phần cũ không dùng */
+        #progress { display: none; }
+        /* Cho phép JS hiển thị/ẩn nút xác nhận, không dùng !important */
+        #confirm-btn { display: none; }
+        /* Bảng tổng kết cuối game */
+        .summary { display: none; margin: 20px; background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); color: #333; }
+        .summary.show { display: block; }
+        .summary h2 { margin: 0 0 12px; color: #ff6b6b; }
+        .summary .summary-images { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .summary .card { width: 160px; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        .summary .card img { width: 100%; height: 120px; object-fit: cover; background: #fff; }
+        .summary .card .caption { padding: 8px; font-size: 14px; color: #555; }
+    </style>
+</head>
+<body>
+    <h1>Chọn Kính Đúng Nào Em!</h1>
+    <small>(Thử từng cái, rồi nhấn "Xác Nhận" nếu em nghĩ đúng! Chỉ có 1 cái thôi)</small>
+    <div id="face-container">
+        <img id="base-face" src="images/face.png" alt="Mặt em">
+        <img id="glasses-overlay" src="" alt="Kính">
+    </div>
+    <div id="message">Lượt 1: Chọn một kính bên dưới để xem thử trên ảnh!</div>
+    <div id="status"><span id="round">Lượt: 1/2</span> • <span id="score">Điểm: 0</span></div>
+    <div id="thumbnails" aria-label="Danh sách kính"></div>
+    <div id="summary" class="summary">
+        <h2>Tổng kết</h2>
+        <p id="summary-text">Chúc mừng em đã hoàn thành cả 2 lượt!</p>
+        <div class="summary-images" id="summary-images"></div>
+    </div>
+    <button id="confirm-btn" onclick="confirmSelection()">Xác Nhận</button>
+    <button class="remove" onclick="removeGlasses()">Bỏ Kính</button>
+    <button class="reset" onclick="resetGame()">Chơi Lại</button>
+    <div id="confetti" class="confetti"></div>
+
+    <script>
+        
+
+        const baseFace = 'images/face.png';
+        const roundFaces = ['images/face.png', 'images/face2.png'];
+        let currentRound = 1;
+        const totalRounds = 2;
+        let score = 0;
+        const correctGlassesRound = [2, 0]; // Lượt 1: Ảnh số 3 (index 2), Lượt 2: Ảnh số 1 trong nhóm 6-10 (index 0)
+        let currentSelectedIndex = -1;
+        function getBaseFace() { return roundFaces[currentRound - 1]; }
+        function updateStatus() {
+            const r = document.getElementById('round');
+            const s = document.getElementById('score');
+            if (r) r.textContent = `Lượt: ${currentRound}/${totalRounds}`;
+            if (s) s.textContent = `Điểm: ${score}`;
+        }
+
+
+        const glassesRound = [
+          [
+            { thumb: 'images/glasses1.png', final: 'images/face-glasses1.png', label: 'Kính 1' },
+            { thumb: 'images/glasses2.png', final: 'images/face-glasses2.png', label: 'Kính 2' },
+            { thumb: 'images/glasses3.png', final: 'images/face-glasses3.png', label: 'Kính 3' },
+            { thumb: 'images/glasses4.png', final: 'images/face-glasses4.png', label: 'Kính 4' },
+            { thumb: 'images/glasses5.png', final: 'images/face-glasses5.png', label: 'Kính 5' },
+          ],
+          [
+            { thumb: 'images/glasses6.png', final: 'images/face2-glasses6.png', label: 'Kính 6' },
+            { thumb: 'images/glasses7.png', final: 'images/face2-glasses7.png', label: 'Kính 7' },
+            { thumb: 'images/glasses8.png', final: 'images/face2-glasses8.png', label: 'Kính 8' },
+            { thumb: 'images/glasses9.png', final: 'images/face2-glasses9.png', label: 'Kính 9' },
+            { thumb: 'images/glasses10.png', final: 'images/face2-glasses10.png', label: 'Kính 10' },
+          ]
+        ];
+        function getGlassesForRound(r) { return glassesRound[r - 1]; }
+
+        function initGame() {
+            const base = document.getElementById('base-face');
+            base.src = getBaseFace();
+            const container = document.getElementById('thumbnails');
+            container.innerHTML = '';
+            getGlassesForRound(currentRound).forEach((item, index) => {
+                const t = document.createElement('div');
+                t.className = 'thumb';
+                t.title = item.label || `Kính ${index + 1}`;
+                const im = document.createElement('img');
+                im.src = item.thumb;
+                im.alt = item.label || `Kính ${index + 1}`;
+                t.appendChild(im);
+                t.onclick = () => selectGlasses(index);
+                container.appendChild(t);
+            });
+            const confirmBtn = document.getElementById('confirm-btn');
+            if (confirmBtn) confirmBtn.style.display = 'none';
+            currentSelectedIndex = -1;
+            updateStatus();
+            const msg = document.getElementById('message');
+            if (msg) msg.textContent = 'Lượt 1: Chọn một kính bên dưới để xem thử trên ảnh!';
+        }
+
+
+        function confirmSelection() {
+            if (typeof currentSelectedIndex === 'undefined' || currentSelectedIndex === -1) {
+                updateMessage('Hãy chọn kính trước khi nhấn "Xác Nhận" nhé!');
+                return;
+            }
+            const isCorrect = currentSelectedIndex === correctGlassesRound[currentRound - 1];
+            const confirmBtn = document.getElementById('confirm-btn');
+            const summaryEl = document.getElementById('summary');
+            const summaryImagesEl = document.getElementById('summary-images');
+            const summaryTextEl = document.getElementById('summary-text');
+            if (isCorrect) {
+                score += 5;
+                updateStatus();
+                launchConfetti();
+                if (confirmBtn) confirmBtn.style.display = 'none';
+                if (currentRound < totalRounds) {
+                    updateMessage('Đúng rồi! +5 điểm. Chuẩn bị sang lượt tiếp theo...');
+                    setTimeout(nextRound, 1200);
+                } else {
+                    updateMessage(`Đúng rồi! +5 điểm. Hoàn thành cả 2 lượt! Tổng điểm: ${score}`);
+                    // Hiển thị bảng tổng kết ở lượt 2
+                    if (summaryEl && summaryImagesEl && summaryTextEl) {
+                        summaryImagesEl.innerHTML = '';
+                        const correctRound1 = glassesRound[0][correctGlassesRound[0]].final;
+                        const correctRound2 = glassesRound[1][correctGlassesRound[1]].final;
+                        const card1 = document.createElement('div');
+                        card1.className = 'card';
+                        card1.innerHTML = `<img src="${correctRound1}" alt="Kính đúng lượt 1"><div class="caption">Lượt 1</div>`;
+                        const card2 = document.createElement('div');
+                        card2.className = 'card';
+                        card2.innerHTML = `<img src="${correctRound2}" alt="Kính đúng lượt 2"><div class="caption">Lượt 2</div>`;
+                        summaryImagesEl.appendChild(card1);
+                        summaryImagesEl.appendChild(card2);
+                        summaryTextEl.textContent = `Chúc mừng em! Tổng điểm: ${score}. Hai bức ảnh đúng loại kính đây!`;
+                        summaryEl.classList.add('show');
+                    }
+                }
+            } else {
+                updateMessage('Sai mất rồi, thử kính khác nhé!');
+                if (confirmBtn) confirmBtn.style.display = 'none';
+            }
+        }
+
+        function updateMessage(text) {
+            document.getElementById('message').innerHTML = text;
+        }
+
+        function launchConfetti() {
+            const confetti = document.getElementById('confetti');
+            confetti.innerHTML = '';
+            const colors = ['#ff6b6b', '#ff9a9e', '#ffeaa7', '#a8edea', '#fed6e3'];
+            for (let i = 0; i < 100; i++) {
+                const piece = document.createElement('div');
+                piece.classList.add('confetti-piece');
+                piece.style.left = Math.random() * 100 + 'vw';
+                piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.animationDelay = Math.random() * 3 + 's';
+                piece.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                confetti.appendChild(piece);
+            }
+            setTimeout(() => { confetti.innerHTML = ''; }, 5000);
+        }
+
+        function selectGlasses(index) {
+            const item = getGlassesForRound(currentRound)[index];
+            const base = document.getElementById('base-face');
+            const thumbs = document.querySelectorAll('#thumbnails .thumb');
+            thumbs.forEach((el, i) => el.classList.toggle('active', i === index));
+            const finalSrc = item.final;
+            const img = new Image();
+            img.onload = () => {
+                base.classList.add('fade-out');
+                setTimeout(() => {
+                    base.src = finalSrc;
+                    void base.offsetWidth;
+                    base.classList.remove('fade-out');
+                    base.classList.add('fade-in');
+                    setTimeout(() => base.classList.remove('fade-in'), 400);
+                    currentSelectedIndex = index;
+                    const confirmBtn = document.getElementById('confirm-btn');
+                    if (confirmBtn) confirmBtn.style.display = 'inline-block';
+                    updateMessage(`Em chọn ${item.label || 'kính'} này à? Nhấn "Xác Nhận" nhé!`);
+                }, 100);
+            };
+            img.onerror = () => { updateMessage('Ảnh cho lượt này chưa sẵn sàng. Thử kính khác nhé!'); };
+            img.src = finalSrc;
+        }
+
+        function resetGame() {
+            currentRound = 1;
+            score = 0;
+            const base = document.getElementById('base-face');
+            base.classList.remove('fade-out', 'fade-in');
+            base.src = getBaseFace();
+            const container = document.getElementById('thumbnails');
+            container.innerHTML = '';
+            getGlassesForRound(currentRound).forEach((item, index) => {
+                const t = document.createElement('div');
+                t.className = 'thumb';
+                t.title = item.label || `Kính ${index + 1}`;
+                const im = document.createElement('img');
+                im.src = item.thumb;
+                im.alt = item.label || `Kính ${index + 1}`;
+                t.appendChild(im);
+                t.onclick = () => selectGlasses(index);
+                container.appendChild(t);
+            });
+            const msg = document.getElementById('message');
+            if (msg) msg.textContent = 'Lượt 1: Chọn một kính bên dưới để xem thử trên ảnh!';
+            const confirmBtn = document.getElementById('confirm-btn');
+            if (confirmBtn) confirmBtn.style.display = 'none';
+            currentSelectedIndex = -1;
+            updateStatus();
+            const summaryEl = document.getElementById('summary');
+            if (summaryEl) summaryEl.classList.remove('show');
+        }
+        function removeGlasses() {
+            const base = document.getElementById('base-face');
+            base.classList.remove('fade-out', 'fade-in');
+            base.src = getBaseFace();
+            const thumbs = document.querySelectorAll('#thumbnails .thumb');
+            thumbs.forEach(el => el.classList.remove('active'));
+            const confirmBtn = document.getElementById('confirm-btn');
+            if (confirmBtn) confirmBtn.style.display = 'none';
+            currentSelectedIndex = -1;
+            const msg = document.getElementById('message');
+            if (msg) msg.textContent = 'Đã bỏ kính! Em thử kính khác nhé.';
+        }
+        function nextRound() {
+            if (currentRound >= totalRounds) return;
+            currentRound++;
+            const base = document.getElementById('base-face');
+            base.classList.remove('fade-out', 'fade-in');
+            base.src = getBaseFace();
+            const container = document.getElementById('thumbnails');
+            container.innerHTML = '';
+            getGlassesForRound(currentRound).forEach((item, index) => {
+                const t = document.createElement('div');
+                t.className = 'thumb';
+                t.title = item.label || `Kính ${index + 1}`;
+                const im = document.createElement('img');
+                im.src = item.thumb;
+                im.alt = item.label || `Kính ${index + 1}`;
+                t.appendChild(im);
+                t.onclick = () => selectGlasses(index);
+                container.appendChild(t);
+            });
+            const confirmBtn = document.getElementById('confirm-btn');
+            if (confirmBtn) confirmBtn.style.display = 'none';
+            currentSelectedIndex = -1;
+            updateStatus();
+            updateMessage(`Lượt ${currentRound}: Chọn một kính bên dưới để xem thử trên ảnh!`);
+        }
+    initGame();
+    </script>
+</body>
+</html>
