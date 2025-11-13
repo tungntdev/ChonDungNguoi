@@ -197,6 +197,15 @@
         .summary .card { width: 160px; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
         .summary .card img { width: 100%; height: 120px; object-fit: cover; background: #fff; }
         .summary .card .caption { padding: 8px; font-size: 14px; color: #555; }
+        /* CSS magic transition */
+        @keyframes magic-zoom {
+            0% { transform: scale(1) rotate(0deg); filter: brightness(1) blur(0px); box-shadow: 0 8px 16px rgba(255,105,97,0.2); }
+            50% { transform: scale(1.06) rotate(0.5deg); filter: brightness(1.1) blur(2px); box-shadow: 0 12px 22px rgba(255,105,97,0.35); }
+            100% { transform: scale(1) rotate(0deg); filter: brightness(1) blur(0px); box-shadow: 0 8px 16px rgba(255,105,97,0.2); }
+        }
+        #face-container.magic-transition {
+            animation: magic-zoom 0.6s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -227,7 +236,7 @@
         let currentRound = 1;
         const totalRounds = 2;
         let score = 0;
-        const correctGlassesRound = [2, 0]; // Lượt 1: Ảnh số 3 (index 2), Lượt 2: Ảnh số 1 trong nhóm 6-10 (index 0)
+        const correctGlassesRound = [2, 2]; // Lượt 1: Kính 3 (index 2), Lượt 2: Kính 8 (index 2)
         let currentSelectedIndex = -1;
         function getBaseFace() { return roundFaces[currentRound - 1]; }
         function updateStatus() {
@@ -291,36 +300,45 @@
             const summaryEl = document.getElementById('summary');
             const summaryImagesEl = document.getElementById('summary-images');
             const summaryTextEl = document.getElementById('summary-text');
+
+            if (currentRound === 1) {
+                if (isCorrect) {
+                    score += 5;
+                    updateStatus();
+                    launchConfetti();
+                    updateMessage('Đúng rồi! +5 điểm. Sang lượt tiếp theo...');
+                } else {
+                    updateMessage('Sai mất rồi. Sang lượt tiếp theo nhé!');
+                }
+                if (confirmBtn) confirmBtn.style.display = 'none';
+                setTimeout(nextRound, 1000);
+                return;
+            }
+
+            // currentRound === 2
             if (isCorrect) {
                 score += 5;
                 updateStatus();
                 launchConfetti();
-                if (confirmBtn) confirmBtn.style.display = 'none';
-                if (currentRound < totalRounds) {
-                    updateMessage('Đúng rồi! +5 điểm. Chuẩn bị sang lượt tiếp theo...');
-                    setTimeout(nextRound, 1200);
-                } else {
-                    updateMessage(`Đúng rồi! +5 điểm. Hoàn thành cả 2 lượt! Tổng điểm: ${score}`);
-                    // Hiển thị bảng tổng kết ở lượt 2
-                    if (summaryEl && summaryImagesEl && summaryTextEl) {
-                        summaryImagesEl.innerHTML = '';
-                        const correctRound1 = glassesRound[0][correctGlassesRound[0]].final;
-                        const correctRound2 = glassesRound[1][correctGlassesRound[1]].final;
-                        const card1 = document.createElement('div');
-                        card1.className = 'card';
-                        card1.innerHTML = `<img src="${correctRound1}" alt="Kính đúng lượt 1"><div class="caption">Lượt 1</div>`;
-                        const card2 = document.createElement('div');
-                        card2.className = 'card';
-                        card2.innerHTML = `<img src="${correctRound2}" alt="Kính đúng lượt 2"><div class="caption">Lượt 2</div>`;
-                        summaryImagesEl.appendChild(card1);
-                        summaryImagesEl.appendChild(card2);
-                        summaryTextEl.textContent = `Chúc mừng em! Tổng điểm: ${score}. Hai bức ảnh đúng loại kính đây!`;
-                        summaryEl.classList.add('show');
-                    }
-                }
+                updateMessage(`Đúng rồi! +5 điểm. Hoàn thành cả 2 lượt! Tổng điểm: ${score}`);
             } else {
-                updateMessage('Sai mất rồi, thử kính khác nhé!');
-                if (confirmBtn) confirmBtn.style.display = 'none';
+                updateMessage(`Sai mất rồi! Hoàn thành cả 2 lượt! Tổng điểm: ${score}`);
+            }
+            if (confirmBtn) confirmBtn.style.display = 'none';
+            if (summaryEl && summaryImagesEl && summaryTextEl) {
+                summaryImagesEl.innerHTML = '';
+                const correctRound1 = glassesRound[0][correctGlassesRound[0]].final;
+                const correctRound2 = glassesRound[1][correctGlassesRound[1]].final;
+                const card1 = document.createElement('div');
+                card1.className = 'card';
+                card1.innerHTML = `<img src="${correctRound1}" alt="Kính đúng lượt 1"><div class="caption">Lượt 1</div>`;
+                const card2 = document.createElement('div');
+                card2.className = 'card';
+                card2.innerHTML = `<img src="${correctRound2}" alt="Kính đúng lượt 2"><div class="caption">Lượt 2</div>`;
+                summaryImagesEl.appendChild(card1);
+                summaryImagesEl.appendChild(card2);
+                summaryTextEl.textContent = `Chúc mừng em! Tổng điểm: ${score}. Hai bức ảnh đúng loại kính đây!`;
+                summaryEl.classList.add('show');
             }
         }
 
@@ -347,23 +365,27 @@
         function selectGlasses(index) {
             const item = getGlassesForRound(currentRound)[index];
             const base = document.getElementById('base-face');
+            const container = document.getElementById('face-container');
             const thumbs = document.querySelectorAll('#thumbnails .thumb');
             thumbs.forEach((el, i) => el.classList.toggle('active', i === index));
             const finalSrc = item.final;
             const img = new Image();
             img.onload = () => {
+                // Hiệu ứng vi diệu: thêm lớp magic-transition trên container + fade
+                container.classList.add('magic-transition');
                 base.classList.add('fade-out');
                 setTimeout(() => {
                     base.src = finalSrc;
                     void base.offsetWidth;
                     base.classList.remove('fade-out');
                     base.classList.add('fade-in');
-                    setTimeout(() => base.classList.remove('fade-in'), 400);
+                    setTimeout(() => base.classList.remove('fade-in'), 450);
+                    setTimeout(() => container.classList.remove('magic-transition'), 600);
                     currentSelectedIndex = index;
                     const confirmBtn = document.getElementById('confirm-btn');
                     if (confirmBtn) confirmBtn.style.display = 'inline-block';
                     updateMessage(`Em chọn ${item.label || 'kính'} này à? Nhấn "Xác Nhận" nhé!`);
-                }, 100);
+                }, 120);
             };
             img.onerror = () => { updateMessage('Ảnh cho lượt này chưa sẵn sàng. Thử kính khác nhé!'); };
             img.src = finalSrc;
